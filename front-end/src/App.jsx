@@ -1,6 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import SearchPage from './pages/SearchPage';
-import ResultsPage from './pages/ResultsPage';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import SearchPage from "./pages/SearchPage";
+import ResultsPage from "./pages/ResultsPage";
 
 function App() {
   return (
@@ -15,4 +15,3 @@ function App() {
 }
 
 export default App;
-

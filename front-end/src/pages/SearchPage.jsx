@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import HeroSection from '../components/HeroSection';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import HeroSection from "../components/HeroSection";
 
 const SearchPage = () => {
   const navigate = useNavigate();
-  const [budget, setBudget] = useState('');
-  const [budgetType, setBudgetType] = useState('perPerson');
+  const [budget, setBudget] = useState("");
+  const [budgetType, setBudgetType] = useState("perPerson");
   const [numberOfPeople, setNumberOfPeople] = useState(2);
   const [center, setCenter] = useState(null);
 
@@ -16,7 +16,7 @@ const SearchPage = () => {
         (position) => {
           const newCenter = {
             lat: position.coords.latitude,
-            lng: position.coords.longitude,
+            lng: position.coords.longitude
           };
           setCenter(newCenter);
           if (callback) {
@@ -24,9 +24,9 @@ const SearchPage = () => {
           }
         },
         (error) => {
-          console.error('위치 정보를 가져올 수 없습니다:', error);
+          console.error("위치 정보를 가져올 수 없습니다:", error);
           if (showAlert) {
-            alert('위치 정보를 가져올 수 없습니다. 브라우저 위치 권한을 확인해주세요.');
+            alert("위치 정보를 가져올 수 없습니다. 브라우저 위치 권한을 확인해주세요.");
           }
           if (callback) {
             callback(null);
@@ -35,7 +35,7 @@ const SearchPage = () => {
       );
     } else {
       if (showAlert) {
-        alert('브라우저가 위치 정보를 지원하지 않습니다.');
+        alert("브라우저가 위치 정보를 지원하지 않습니다.");
       }
       if (callback) {
         callback(null);
@@ -59,14 +59,14 @@ const SearchPage = () => {
   const handleSearch = (searchParams) => {
     // 검색 조건을 URL 파라미터로 전달
     const params = new URLSearchParams({
-      query: searchParams.query || '',
-      budget: budget || '',
+      query: searchParams.query || "",
+      budget: budget || "",
       budgetType: budgetType,
       numberOfPeople: numberOfPeople.toString(),
-      lat: center?.lat?.toString() || '',
-      lng: center?.lng?.toString() || '',
+      lat: center?.lat?.toString() || "",
+      lng: center?.lng?.toString() || ""
     });
-    
+
     navigate(`/results?${params.toString()}`);
   };
 
@@ -87,4 +87,3 @@ const SearchPage = () => {
 };
 
 export default SearchPage;
-

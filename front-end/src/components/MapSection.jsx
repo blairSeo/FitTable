@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Map, MapMarker } from 'react-kakao-maps-sdk';
+import { useEffect, useState } from "react";
+import { Map, MapMarker } from "react-kakao-maps-sdk";
 
 const MapSection = ({ restaurants, selectedRestaurant, onMarkerClick, center, setCenter }) => {
   const [map, setMap] = useState(null);
@@ -9,41 +9,34 @@ const MapSection = ({ restaurants, selectedRestaurant, onMarkerClick, center, se
       try {
         map.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
       } catch (error) {
-        console.error('지도 중심 설정 오류:', error);
+        console.error("지도 중심 설정 오류:", error);
       }
     }
   }, [map, center]);
 
   return (
     <div className="w-full h-full relative bg-gray-200">
-      <Map
-        center={{ lat: center.lat, lng: center.lng }}
-        style={{ width: '100%', height: '100%' }}
-        level={3}
-        onCreate={setMap}
-        scrollwheel={true}
-        draggable={true}
-        zoomable={true}
-      >
+      <Map center={{ lat: center.lat, lng: center.lng }} style={{ width: "100%", height: "100%" }} level={3} onCreate={setMap} scrollwheel={true} draggable={true} zoomable={true}>
         {restaurants.map((restaurant) => (
           <MapMarker
             key={restaurant.id}
             position={{ lat: restaurant.lat, lng: restaurant.lng }}
             onClick={() => onMarkerClick(restaurant)}
             image={{
-              src: selectedRestaurant?.id === restaurant.id
-                ? 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png'
-                : 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker.png',
+              src:
+                selectedRestaurant?.id === restaurant.id
+                  ? "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png"
+                  : "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker.png",
               size: {
                 width: 30,
-                height: 42,
+                height: 42
               },
               options: {
                 offset: {
                   x: 15,
-                  y: 42,
-                },
-              },
+                  y: 42
+                }
+              }
             }}
           />
         ))}
@@ -53,4 +46,3 @@ const MapSection = ({ restaurants, selectedRestaurant, onMarkerClick, center, se
 };
 
 export default MapSection;
-
