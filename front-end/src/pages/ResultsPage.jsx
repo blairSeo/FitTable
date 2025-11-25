@@ -24,30 +24,18 @@ const ResultsPage = () => {
   // URL 파라미터에서 검색 조건 가져오기
   useEffect(() => {
     const query = searchParams.get("query") || "";
-    const budget = searchParams.get("budget") || "";
-    const budgetType = searchParams.get("budgetType") || "perPerson";
-    const numberOfPeople = parseInt(searchParams.get("numberOfPeople") || "2");
-    const lat = parseFloat(searchParams.get("lat") || "");
-    const lng = parseFloat(searchParams.get("lng") || "");
+    const latParam = searchParams.get("lat");
+    const lngParam = searchParams.get("lng");
+    const lat = latParam ? parseFloat(latParam) : NaN;
+    const lng = lngParam ? parseFloat(lngParam) : NaN;
 
     // 위치 설정
-    if (lat && lng) {
+    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
       setCenter({ lat, lng });
     }
 
     // 검색 실행
     let filtered = [...mockRestaurants];
-
-    // 예산 필터링
-    if (budget) {
-      const budgetNum = parseInt(budget);
-      if (budgetType === "perPerson") {
-        filtered = filtered.filter((r) => r.pricePerPerson <= budgetNum);
-      } else {
-        const maxPerPerson = Math.floor(budgetNum / numberOfPeople);
-        filtered = filtered.filter((r) => r.pricePerPerson <= maxPerPerson);
-      }
-    }
 
     // 검색어 필터링
     if (query) {
