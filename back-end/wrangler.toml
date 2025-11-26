@@ -2,5 +2,9 @@ name = "back-end"
 main = "src/index.js"
 compatibility_date = "2024-05-01"
 
+[vars]
+NAVER_CLIENT_ID = "JuznXL0QPNleb7ktmQXr"
+NAVER_CLIENT_SECRET = "d9vMJ7S4Mb"
+
 [ai]
 binding = "AI"
