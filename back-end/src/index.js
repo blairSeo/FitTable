@@ -44,14 +44,23 @@ const parseAiResponse = (raw) => {
 }
 
 const ensureValidResult = (result) => {
-  if (!result?.location?.name) {
-    throw new Error('AI가 위치를 추출하지 못했습니다.')
-  }
+  let location = null
 
-  const { latitude, longitude } = result.location
+  if (result?.location?.name) {
+    const { latitude, longitude } = result.location
+    const hasValidCoords = typeof latitude === 'number' && !Number.isNaN(latitude) && typeof longitude === 'number' && !Number.isNaN(longitude)
 
-  if (typeof latitude !== 'number' || Number.isNaN(latitude) || typeof longitude !== 'number' || Number.isNaN(longitude)) {
-    throw new Error('AI가 좌표를 제공하지 않았습니다.')
+    location = hasValidCoords
+      ? {
+          name: String(result.location.name),
+          latitude,
+          longitude
+        }
+      : {
+          name: String(result.location.name),
+          latitude: null,
+          longitude: null
+        }
   }
 
   const cuisine = result.cuisine === null || result.cuisine === undefined || result.cuisine === '' ? null : String(result.cuisine)
@@ -64,11 +73,7 @@ const ensureValidResult = (result) => {
   }
 
   return {
-    location: {
-      name: String(result.location.name),
-      latitude,
-      longitude
-    },
+    location,
     cuisine,
     keywords
   }
@@ -156,6 +161,14 @@ app.post('/api/parse-query', async (c) => {
 
   const query = typeof payload?.query === 'string' ? payload.query.trim() : ''
 
+  const currentLatRaw = payload?.currentLat ?? payload?.currentLatitude
+  const currentLngRaw = payload?.currentLng ?? payload?.currentLongitude
+
+  const currentLat = typeof currentLatRaw === 'number' ? currentLatRaw : currentLatRaw !== undefined ? parseFloat(currentLatRaw) : NaN
+  const currentLng = typeof currentLngRaw === 'number' ? currentLngRaw : currentLngRaw !== undefined ? parseFloat(currentLngRaw) : NaN
+
+  const hasCurrentLocation = !Number.isNaN(currentLat) && !Number.isNaN(currentLng)
+
   if (!query) {
     return c.json({ error: 'query 필드는 필수입니다.' }, 400)
   }
@@ -163,15 +176,37 @@ app.post('/api/parse-query', async (c) => {
   try {
     const aiResult = await extractInfoWithAI(c.env.AI, query)
 
+    let resolvedLocation = aiResult.location
+
+    const needsFallback =
+      !resolvedLocation ||
+      typeof resolvedLocation.latitude !== 'number' ||
+      Number.isNaN(resolvedLocation.latitude) ||
+      typeof resolvedLocation.longitude !== 'number' ||
+      Number.isNaN(resolvedLocation.longitude)
+
+    if (needsFallback && hasCurrentLocation) {
+      resolvedLocation = {
+        name: resolvedLocation?.name || '현재 위치',
+        latitude: currentLat,
+        longitude: currentLng
+      }
+    }
+
+    const finalResult = {
+      ...aiResult,
+      location: resolvedLocation
+    }
+
     let naverResult = null
     try {
-      naverResult = await searchNaverLocal(c.env, aiResult)
+      naverResult = await searchNaverLocal(c.env, finalResult)
     } catch (naverError) {
       console.error('[naver-search:error]', naverError)
     }
 
     return c.json({
-      ...aiResult,
+      ...finalResult,
       naver: naverResult
     })
   } catch (error) {
