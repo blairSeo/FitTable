@@ -14,10 +14,38 @@ const HeroSection = ({ onSearch }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
+    let currentLat = null;
+    let currentLng = null;
+
+    // 검색어가 없으면 현재 위치 가져오기
+    if (!searchQuery.trim()) {
+      try {
+        const position = await new Promise((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error("위치 정보를 사용할 수 없습니다."));
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+        
+        currentLat = position.coords.latitude;
+        currentLng = position.coords.longitude;
+      } catch (error) {
+        console.error("현재 위치 가져오기 실패:", error);
+        // 위치를 가져오지 못해도 빈 검색어로 진행
+      }
+    }
+
     if (onSearch) {
       onSearch({
-        query: searchQuery
+        query: searchQuery,
+        currentLat,
+        currentLng
       });
     }
   };

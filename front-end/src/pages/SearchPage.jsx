@@ -5,10 +5,15 @@ const SearchPage = () => {
   const navigate = useNavigate();
 
   const handleSearch = (searchParams) => {
-    // 검색어만 전달 (중심 좌표는 API 결과에서 결정)
     const params = new URLSearchParams({
       query: searchParams.query || ""
     });
+
+    // 현재 위치가 있으면 URL 파라미터에 추가
+    if (searchParams.currentLat && searchParams.currentLng) {
+      params.append("currentLat", searchParams.currentLat.toString());
+      params.append("currentLng", searchParams.currentLng.toString());
+    }
 
     navigate(`/results?${params.toString()}`);
   };

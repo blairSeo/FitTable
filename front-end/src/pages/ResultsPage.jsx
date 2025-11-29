@@ -20,19 +20,31 @@ const ResultsPage = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
 
   // URL 파라미터에서 검색 조건 가져오기
   useEffect(() => {
     const query = searchParams.get("query") || "";
+    const currentLatParam = searchParams.get("currentLat");
+    const currentLngParam = searchParams.get("currentLng");
+    
+    const currentLat = currentLatParam ? parseFloat(currentLatParam) : null;
+    const currentLng = currentLngParam ? parseFloat(currentLngParam) : null;
 
-    // 검색어가 없으면 초기화
-    if (!query) {
+    // 검색어가 없고 현재 위치도 없으면 초기화
+    if (!query && (!currentLat || !currentLng || isNaN(currentLat) || isNaN(currentLng))) {
       setRestaurants([]);
       setSelectedRestaurant(null);
       setError(null);
       setMapCenter(DEFAULT_CENTER);
+      setCurrentPage(1);
+      setHasMore(false);
+      setTotal(0);
       return;
     }
 
@@ -40,16 +52,19 @@ const ResultsPage = () => {
     const fetchRestaurants = async () => {
       setIsLoading(true);
       setError(null);
+      setCurrentPage(1);
 
       try {
-        const results = await searchRestaurants(query);
-        setRestaurants(results);
+        const result = await searchRestaurants(query || "", currentLat, currentLng, 1);
+        setRestaurants(result.items);
+        setHasMore(result.hasMore);
+        setTotal(result.total);
         
-        if (results.length > 0) {
-          setSelectedRestaurant(results[0]);
+        if (result.items.length > 0) {
+          setSelectedRestaurant(result.items[0]);
           // 검색 결과의 중심 좌표 계산
-          const avgLat = results.reduce((sum, r) => sum + r.lat, 0) / results.length;
-          const avgLng = results.reduce((sum, r) => sum + r.lng, 0) / results.length;
+          const avgLat = result.items.reduce((sum, r) => sum + r.lat, 0) / result.items.length;
+          const avgLng = result.items.reduce((sum, r) => sum + r.lng, 0) / result.items.length;
           setMapCenter({ lat: avgLat, lng: avgLng });
         } else {
           setSelectedRestaurant(null);
@@ -60,6 +75,8 @@ const ResultsPage = () => {
         setError(err.message || "맛집 검색 중 오류가 발생했습니다.");
         setRestaurants([]);
         setSelectedRestaurant(null);
+        setHasMore(false);
+        setTotal(0);
       } finally {
         setIsLoading(false);
       }
@@ -80,6 +97,35 @@ const ResultsPage = () => {
     setSelectedRestaurant(restaurant);
     // 선택된 레스토랑으로 지도 중심 이동
     setMapCenter({ lat: restaurant.lat, lng: restaurant.lng });
+  };
+
+  // 더보기 버튼 클릭 핸들러
+  const handleLoadMore = async () => {
+    const query = searchParams.get("query") || "";
+    const currentLatParam = searchParams.get("currentLat");
+    const currentLngParam = searchParams.get("currentLng");
+    
+    const currentLat = currentLatParam ? parseFloat(currentLatParam) : null;
+    const currentLng = currentLngParam ? parseFloat(currentLngParam) : null;
+
+    if ((!query && (!currentLat || !currentLng)) || !hasMore || isLoadingMore) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+    try {
+      const nextPage = currentPage + 1;
+      const result = await searchRestaurants(query || "", currentLat, currentLng, nextPage);
+      
+      setRestaurants((prev) => [...prev, ...result.items]);
+      setHasMore(result.hasMore);
+      setCurrentPage(nextPage);
+    } catch (err) {
+      console.error("더보기 로드 오류:", err);
+      setError(err.message || "더보기 로드 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   return (
@@ -119,38 +165,59 @@ const ResultsPage = () => {
                 </button>
               </div>
             ) : restaurants.length > 0 ? (
-              <div className="space-y-4">
-                {restaurants.map((restaurant, index) => (
-                  <div
-                    key={`${restaurant.name}-${index}`}
-                    onClick={() => handleCardClick(restaurant)}
-                    className={`bg-white rounded-2xl shadow-sm hover:shadow-xl overflow-hidden cursor-pointer transition-all duration-300 border-2 transform hover:-translate-y-1 ${
-                      selectedRestaurant?.name === restaurant.name && selectedRestaurant?.lat === restaurant.lat && selectedRestaurant?.lng === restaurant.lng
-                        ? "border-blue-500 shadow-blue-100 shadow-lg ring-2 ring-blue-200"
-                        : "border-gray-100 hover:border-gray-200"
-                    }`}
-                  >
-                    {/* 카드 내용 */}
-                    <div className="p-5">
-                      {/* 이름 */}
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-xl font-bold text-gray-900 flex-1 pr-2">{restaurant.name}</h3>
-                        {selectedRestaurant?.name === restaurant.name && selectedRestaurant?.lat === restaurant.lat && selectedRestaurant?.lng === restaurant.lng && (
-                          <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">선택됨</div>
-                        )}
-                      </div>
+              <>
+                <div className="space-y-4">
+                  {restaurants.map((restaurant, index) => (
+                    <div
+                      key={`${restaurant.name}-${index}`}
+                      onClick={() => handleCardClick(restaurant)}
+                      className={`bg-white rounded-2xl shadow-sm hover:shadow-xl overflow-hidden cursor-pointer transition-all duration-300 border-2 transform hover:-translate-y-1 ${
+                        selectedRestaurant?.name === restaurant.name && selectedRestaurant?.lat === restaurant.lat && selectedRestaurant?.lng === restaurant.lng
+                          ? "border-blue-500 shadow-blue-100 shadow-lg ring-2 ring-blue-200"
+                          : "border-gray-100 hover:border-gray-200"
+                      }`}
+                    >
+                      {/* 카드 내용 */}
+                      <div className="p-5">
+                        {/* 이름 */}
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="text-xl font-bold text-gray-900 flex-1 pr-2">{restaurant.name}</h3>
+                          {selectedRestaurant?.name === restaurant.name && selectedRestaurant?.lat === restaurant.lat && selectedRestaurant?.lng === restaurant.lng && (
+                            <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">선택됨</div>
+                          )}
+                        </div>
 
-                      {/* 주소 */}
-                      <div className="pt-3 border-t border-gray-100">
-                        <div className="flex items-start gap-2">
-                          <span className="text-gray-400 text-sm">📍</span>
-                          <p className="text-sm text-gray-600 leading-relaxed flex-1">{restaurant.address}</p>
+                        {/* 주소 */}
+                        <div className="pt-3 border-t border-gray-100">
+                          <div className="flex items-start gap-2">
+                            <span className="text-gray-400 text-sm">📍</span>
+                            <p className="text-sm text-gray-600 leading-relaxed flex-1">{restaurant.address}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+                {/* 더보기 버튼 */}
+                {hasMore && (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-medium transition-colors duration-200 shadow-md hover:shadow-lg flex items-center gap-2"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>로딩 중...</span>
+                        </>
+                      ) : (
+                        <span>더보기</span>
+                      )}
+                    </button>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-16">
                 <div className="text-6xl mb-4">🔍</div>

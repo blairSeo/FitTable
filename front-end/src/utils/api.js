@@ -6,12 +6,14 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8787
  * @param {string} query - 검색어
  * @param {number} [currentLat] - 현재 위도 (선택)
  * @param {number} [currentLng] - 현재 경도 (선택)
- * @returns {Promise<Array>} 변환된 맛집 데이터 배열
+ * @param {number} [page] - 페이지 번호 (기본값: 1)
+ * @returns {Promise<Object>} { items: Array, hasMore: boolean, total: number, page: number }
  */
-export const searchRestaurants = async (query, currentLat = null, currentLng = null) => {
+export const searchRestaurants = async (query, currentLat = null, currentLng = null, page = 1) => {
   try {
     const requestBody = {
-      query: query
+      query: query,
+      page: page
     };
 
     // 현재 위치가 있으면 추가
@@ -43,11 +45,21 @@ export const searchRestaurants = async (query, currentLat = null, currentLng = n
 
     // API 응답의 items 배열 (이미 백엔드에서 mockData.js 구조로 변환됨)
     if (!Array.isArray(data.items)) {
-      return [];
+      return {
+        items: [],
+        hasMore: false,
+        total: 0,
+        page: page
+      };
     }
 
     // 백엔드에서 이미 name, lat, lng, address 구조로 변환되어 있음
-    return data.items;
+    return {
+      items: data.items,
+      hasMore: data.hasMore || false,
+      total: data.total || data.items.length,
+      page: data.page || page
+    };
   } catch (error) {
     console.error("맛집 검색 API 오류:", error);
     

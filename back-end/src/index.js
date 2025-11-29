@@ -109,7 +109,7 @@ const buildKakaoQuery = ({ keywords }) => {
   return full
 }
 
-const searchKakaoLocal = async (env, { location, keywords }) => {
+const searchKakaoLocal = async (env, { location, keywords, page = 1 }) => {
   if (!env.KAKAO_REST_API_KEY) {
     throw new Error('KAKAO_REST_API_KEY가 설정되지 않았습니다.')
   }
@@ -124,7 +124,7 @@ const searchKakaoLocal = async (env, { location, keywords }) => {
   const params = new URLSearchParams({
     query,
     size: '15', // 최대 15개 (카카오 API 제한)
-    page: '1'
+    page: String(page)
   })
 
   // 위치 정보가 있으면 중심 좌표와 반경 추가
@@ -195,12 +195,18 @@ const searchKakaoLocal = async (env, { location, keywords }) => {
         })
         .filter((item) => item !== null) // null 제거
 
-  console.log(`[kakao-search] 검색 완료: query="${query}", 결과=${simplifiedItems.length}개`)
+  console.log(`[kakao-search] 검색 완료: query="${query}", page=${page}, 결과=${simplifiedItems.length}개`)
+
+  const totalCount = typeof data.meta?.total_count === 'number' ? data.meta.total_count : simplifiedItems.length
+  const isEnd = data.meta?.is_end === true
+  const hasMore = !isEnd && simplifiedItems.length > 0
 
   return {
     query,
-    total: typeof data.meta?.total_count === 'number' ? data.meta.total_count : simplifiedItems.length,
-    items: simplifiedItems
+    total: totalCount,
+    items: simplifiedItems,
+    hasMore,
+    page
   }
 }
 
@@ -227,12 +233,63 @@ app.post('/api/parse-query', async (c) => {
 
   const hasCurrentLocation = !Number.isNaN(currentLat) && !Number.isNaN(currentLng)
 
+  // 페이지 번호 파라미터 (기본값: 1)
+  const pageRaw = payload?.page
+  const page = typeof pageRaw === 'number' && pageRaw > 0 ? pageRaw : (pageRaw !== undefined ? parseInt(pageRaw, 10) : 1)
+  const validPage = Number.isNaN(page) || page < 1 ? 1 : page
+
+  // 검색어가 없고 현재 위치가 있으면 현재 위치 기반 검색
+  if (!query && hasCurrentLocation) {
+    try {
+      const finalResult = {
+        location: {
+          name: '현재 위치',
+          latitude: currentLat,
+          longitude: currentLng
+        },
+        cuisine: null,
+        keywords: ['맛집']
+      }
+
+      let kakaoResult = null
+      try {
+        kakaoResult = await searchKakaoLocal(c.env, { ...finalResult, page: validPage })
+      } catch (kakaoError) {
+        console.error('[kakao-search:error]', kakaoError)
+      }
+
+      const items = kakaoResult?.items || []
+      const hasMore = kakaoResult?.hasMore || false
+      const total = kakaoResult?.total || 0
+
+      return c.json({
+        items,
+        hasMore,
+        total,
+        page: validPage
+      })
+    } catch (error) {
+      console.error('[parse-query:error]', error)
+      const message = error instanceof Error ? error.message : '현재 위치 기반 검색 중 오류가 발생했습니다.'
+      return c.json({ error: message }, 500)
+    }
+  }
+
   if (!query) {
-    return c.json({ error: 'query 필드는 필수입니다.' }, 400)
+    return c.json({ error: 'query 필드는 필수이거나 현재 위치 정보가 필요합니다.' }, 400)
   }
 
   try {
     const aiResult = await extractInfoWithAI(c.env.AI, query)
+    console.log('aiResult', aiResult)
+
+    // aiResult.location.name이 있고 keywords에 없으면 추가
+    if (aiResult.location?.name && Array.isArray(aiResult.keywords)) {
+      const locationName = String(aiResult.location.name).trim()
+      if (locationName && !aiResult.keywords.includes(locationName)) {
+        aiResult.keywords.push(locationName)
+      }
+    }
 
     let resolvedLocation = aiResult.location
 
@@ -258,15 +315,20 @@ app.post('/api/parse-query', async (c) => {
 
     let kakaoResult = null
     try {
-      kakaoResult = await searchKakaoLocal(c.env, finalResult)
+      kakaoResult = await searchKakaoLocal(c.env, { ...finalResult, page: validPage })
     } catch (kakaoError) {
       console.error('[kakao-search:error]', kakaoError)
     }
 
     const items = kakaoResult?.items || []
+    const hasMore = kakaoResult?.hasMore || false
+    const total = kakaoResult?.total || 0
 
     return c.json({
-      items
+      items,
+      hasMore,
+      total,
+      page: validPage
     })
   } catch (error) {
     console.error('[parse-query:error]', error)
