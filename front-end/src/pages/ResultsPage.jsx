@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
 import MapSection from "../components/MapSection";
-import ResultCards from "../components/ResultCards";
-import { mockRestaurants, DEFAULT_CENTER } from "../data/mockData";
+import { DEFAULT_CENTER } from "../data/mockData";
+import { searchRestaurants } from "../utils/api";
 import { ArrowLeft } from "lucide-react";
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_API_KEY || "YOUR_KAKAO_MAP_API_KEY";
@@ -13,53 +13,73 @@ const ResultsPage = () => {
   const navigate = useNavigate();
 
   // 카카오맵 SDK 초기화
-  const [loading, error] = useKakaoLoader({
+  const [mapLoading, mapError] = useKakaoLoader({
     appkey: KAKAO_APP_KEY
   });
 
   const [restaurants, setRestaurants] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-  const [center, setCenter] = useState(DEFAULT_CENTER);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
 
   // URL 파라미터에서 검색 조건 가져오기
   useEffect(() => {
     const query = searchParams.get("query") || "";
-    const latParam = searchParams.get("lat");
-    const lngParam = searchParams.get("lng");
-    const lat = latParam ? parseFloat(latParam) : NaN;
-    const lng = lngParam ? parseFloat(lngParam) : NaN;
 
-    // 위치 설정
-    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
-      setCenter({ lat, lng });
+    // 검색어가 없으면 초기화
+    if (!query) {
+      setRestaurants([]);
+      setSelectedRestaurant(null);
+      setError(null);
+      setMapCenter(DEFAULT_CENTER);
+      return;
     }
 
-    // 검색 실행
-    let filtered = [...mockRestaurants];
+    // API 호출
+    const fetchRestaurants = async () => {
+      setIsLoading(true);
+      setError(null);
 
-    // 검색어 필터링
-    if (query) {
-      const queryLower = query.toLowerCase();
-      filtered = filtered.filter((r) => r.name.toLowerCase().includes(queryLower) || r.address.toLowerCase().includes(queryLower));
-    }
+      try {
+        const results = await searchRestaurants(query);
+        setRestaurants(results);
+        
+        if (results.length > 0) {
+          setSelectedRestaurant(results[0]);
+          // 검색 결과의 중심 좌표 계산
+          const avgLat = results.reduce((sum, r) => sum + r.lat, 0) / results.length;
+          const avgLng = results.reduce((sum, r) => sum + r.lng, 0) / results.length;
+          setMapCenter({ lat: avgLat, lng: avgLng });
+        } else {
+          setSelectedRestaurant(null);
+          setMapCenter(DEFAULT_CENTER);
+        }
+      } catch (err) {
+        console.error("맛집 검색 오류:", err);
+        setError(err.message || "맛집 검색 중 오류가 발생했습니다.");
+        setRestaurants([]);
+        setSelectedRestaurant(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    setRestaurants(filtered);
-    if (filtered.length > 0) {
-      setSelectedRestaurant(filtered[0]);
-      setCenter({ lat: filtered[0].lat, lng: filtered[0].lng });
-    }
+    fetchRestaurants();
   }, [searchParams]);
-
-  // 마커 클릭 핸들러
-  const handleMarkerClick = (restaurant) => {
-    setSelectedRestaurant(restaurant);
-    setCenter({ lat: restaurant.lat, lng: restaurant.lng });
-  };
 
   // 카드 클릭 핸들러
   const handleCardClick = (restaurant) => {
     setSelectedRestaurant(restaurant);
-    setCenter({ lat: restaurant.lat, lng: restaurant.lng });
+    // 선택된 레스토랑으로 지도 중심 이동
+    setMapCenter({ lat: restaurant.lat, lng: restaurant.lng });
+  };
+
+  // 마커 클릭 핸들러
+  const handleMarkerClick = (restaurant) => {
+    setSelectedRestaurant(restaurant);
+    // 선택된 레스토랑으로 지도 중심 이동
+    setMapCenter({ lat: restaurant.lat, lng: restaurant.lng });
   };
 
   return (
@@ -84,7 +104,21 @@ const ResultsPage = () => {
             </div>
           </div>
           <div className="p-4">
-            {restaurants.length > 0 ? (
+            {isLoading ? (
+              <div className="text-center py-16">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-600 font-medium text-lg">검색 중...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">⚠️</div>
+                <p className="text-gray-600 font-medium text-lg mb-2">오류가 발생했습니다</p>
+                <p className="text-gray-400 text-sm mb-6">{error}</p>
+                <button onClick={() => navigate("/")} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition-colors duration-200 shadow-md hover:shadow-lg">
+                  다시 검색하기
+                </button>
+              </div>
+            ) : restaurants.length > 0 ? (
               <div className="space-y-4">
                 {restaurants.map((restaurant, index) => (
                   <div
@@ -132,17 +166,24 @@ const ResultsPage = () => {
 
         {/* 오른쪽 지도 영역 (전체 화면) */}
         <div className="flex-1 relative">
-          {loading && (
+          {mapLoading && (
             <div className="w-full h-full flex items-center justify-center bg-gray-200">
               <div className="text-gray-600">지도를 불러오는 중...</div>
             </div>
           )}
-          {error && (
+          {mapError && (
             <div className="w-full h-full flex items-center justify-center bg-gray-200">
-              <div className="text-red-600">지도 로드 실패: {error.message || "카카오맵 API 키를 확인해주세요."}</div>
+              <div className="text-red-600">지도 로드 실패: {mapError.message || "카카오맵 API 키를 확인해주세요."}</div>
             </div>
           )}
-          {!loading && !error && <MapSection restaurants={restaurants} selectedRestaurant={selectedRestaurant} onMarkerClick={handleMarkerClick} center={center} setCenter={setCenter} />}
+          {!mapLoading && !mapError && (
+            <MapSection 
+              center={mapCenter} 
+              restaurants={restaurants}
+              selectedRestaurant={selectedRestaurant}
+              onMarkerClick={handleMarkerClick}
+            />
+          )}
         </div>
       </div>
     </div>
