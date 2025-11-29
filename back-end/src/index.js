@@ -103,124 +103,103 @@ const extractInfoWithAI = async (aiBinding, query) => {
   return ensureValidResult(parsed)
 }
 
-const buildNaverQuery = ({ keywords }) => {
+const buildKakaoQuery = ({ keywords }) => {
   const keywordPart = Array.isArray(keywords) ? keywords.join(' ') : ''
   const full = keywordPart.trim()
   return full
 }
 
-// 네이버 좌표계를 위도/경도로 변환하는 함수
-const convertNaverCoordToLatLng = (mapx, mapy) => {
-  const x = parseFloat(mapx)
-  const y = parseFloat(mapy)
-
-  if (isNaN(x) || isNaN(y)) {
-    return null
+const searchKakaoLocal = async (env, { location, keywords }) => {
+  if (!env.KAKAO_REST_API_KEY) {
+    throw new Error('KAKAO_REST_API_KEY가 설정되지 않았습니다.')
   }
 
-  // 네이버 좌표계를 WGS84(위도/경도)로 변환
-  const RE = 6371.00877 // 지구 반경(km)
-  const GRID = 5.0 // 격자 간격(km)
-  const SLAT1 = 30.0 // 투영 위도1(degree)
-  const SLAT2 = 60.0 // 투영 위도2(degree)
-  const OLON = 126.0 // 기준점 경도(degree)
-  const OLAT = 38.0 // 기준점 위도(degree)
-  const XO = 43 // 기준점 X좌표(GRID)
-  const YO = 136 // 기준점 Y좌표(GRID)
-
-  const DEGRAD = Math.PI / 180.0
-  const RADDEG = 180.0 / Math.PI
-
-  const re = RE / GRID
-  const slat1 = SLAT1 * DEGRAD
-  const slat2 = SLAT2 * DEGRAD
-  const olon = OLON * DEGRAD
-  const olat = OLAT * DEGRAD
-
-  let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5)
-  sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn)
-  let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5)
-  sf = (Math.pow(sf, sn) * Math.cos(slat1)) / sn
-  let ro = Math.tan(Math.PI * 0.25 + olat * 0.5)
-  ro = (re * sf) / Math.pow(ro, sn)
-
-  let ra = Math.tan(Math.PI * 0.25 + olat * 0.5)
-  ra = (re * sf) / Math.pow(ra, sn)
-  let theta = x - XO
-  theta *= olon
-  theta = theta / ra
-
-  let lat = y - YO
-  lat = lat / ra
-  lat = 2.0 * Math.atan(Math.pow(ro / ra, 1.0 / sn)) - Math.PI * 0.5
-  let lon = theta / Math.cos(lat) + olon
-
-  lat = lat * RADDEG
-  lon = lon * RADDEG
-
-  return {
-    lat: Number(lat.toFixed(6)),
-    lng: Number(lon.toFixed(6))
-  }
-}
-
-const searchNaverLocal = async (env, { location, keywords }) => {
-  if (!env.NAVER_CLIENT_ID || !env.NAVER_CLIENT_SECRET) {
-    throw new Error('NAVER_CLIENT_ID 또는 NAVER_CLIENT_SECRET이 설정되지 않았습니다.')
-  }
-
-  const query = buildNaverQuery({ location, keywords })
+  const query = buildKakaoQuery({ location, keywords })
 
   if (!query) {
-    throw new Error('네이버 검색에 사용할 쿼리가 비어 있습니다.')
+    throw new Error('카카오 검색에 사용할 쿼리가 비어 있습니다.')
   }
 
+  // 카카오 로컬 API 요청 파라미터 구성
   const params = new URLSearchParams({
     query,
-    display: '10',
-    start: '1',
-    sort: 'random'
+    size: '15', // 최대 15개 (카카오 API 제한)
+    page: '1'
   })
 
-  const response = await fetch(`https://openapi.naver.com/v1/search/local.json?${params.toString()}`, {
+  // 위치 정보가 있으면 중심 좌표와 반경 추가
+  if (location?.longitude && location?.latitude) {
+    params.append('x', location.longitude.toString())
+    params.append('y', location.latitude.toString())
+    params.append('radius', '20000') // 20km 반경
+  }
+
+  const response = await fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?${params.toString()}`, {
     method: 'GET',
     headers: {
-      'X-Naver-Client-Id': env.NAVER_CLIENT_ID,
-      'X-Naver-Client-Secret': env.NAVER_CLIENT_SECRET
+      'Authorization': `KakaoAK ${env.KAKAO_REST_API_KEY}`
     }
   })
 
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`네이버 API 호출 실패 (status: ${response.status}): ${text}`)
+    let errorMessage = `카카오 API 호출 실패 (status: ${response.status})`
+    try {
+      const errorData = await response.json()
+      if (errorData.message) {
+        errorMessage += `: ${errorData.message}`
+      }
+    } catch {
+      const text = await response.text()
+      if (text) {
+        errorMessage += `: ${text}`
+      }
+    }
+    throw new Error(errorMessage)
   }
 
   const data = await response.json()
+  
+  // 카카오 API 응답 구조 확인
+  if (!data || typeof data !== 'object') {
+    throw new Error('카카오 API 응답 형식이 올바르지 않습니다.')
+  }
 
-  const simplifiedItems = Array.isArray(data.items)
-    ? data.items
+  // 카카오 API는 WGS84 좌표계를 사용하므로 변환 불필요
+  // documents가 없거나 빈 배열인 경우 처리
+  if (!Array.isArray(data.documents)) {
+    console.warn('[kakao-search] documents가 배열이 아닙니다:', data)
+    return {
+      query,
+      total: 0,
+      items: []
+    }
+  }
+
+  const simplifiedItems = data.documents
         .map((item) => {
-          // 네이버 좌표계를 위도/경도로 변환
-          const coords = convertNaverCoordToLatLng(item.mapx, item.mapy)
+          const lng = parseFloat(item.x)
+          const lat = parseFloat(item.y)
 
-          if (!coords) {
-            return null // 좌표 변환 실패 시 제외
+          // 좌표가 유효하지 않으면 제외
+          if (isNaN(lat) || isNaN(lng)) {
+            return null
           }
 
           // mockData.js 구조에 맞게 변환: name, lat, lng, address만 포함
           return {
-            name: item.title || '',
-            lat: coords.lat,
-            lng: coords.lng,
-            address: item.roadAddress || item.address || ''
+            name: item.place_name || '',
+            lat: Number(lat.toFixed(6)),
+            lng: Number(lng.toFixed(6)),
+            address: item.road_address_name || item.address_name || ''
           }
         })
         .filter((item) => item !== null) // null 제거
-    : []
+
+  console.log(`[kakao-search] 검색 완료: query="${query}", 결과=${simplifiedItems.length}개`)
 
   return {
     query,
-    total: typeof data.total === 'number' ? data.total : simplifiedItems.length,
+    total: typeof data.meta?.total_count === 'number' ? data.meta.total_count : simplifiedItems.length,
     items: simplifiedItems
   }
 }
@@ -277,14 +256,14 @@ app.post('/api/parse-query', async (c) => {
       location: resolvedLocation
     }
 
-    let naverResult = null
+    let kakaoResult = null
     try {
-      naverResult = await searchNaverLocal(c.env, finalResult)
-    } catch (naverError) {
-      console.error('[naver-search:error]', naverError)
+      kakaoResult = await searchKakaoLocal(c.env, finalResult)
+    } catch (kakaoError) {
+      console.error('[kakao-search:error]', kakaoError)
     }
 
-    const items = naverResult?.items || []
+    const items = kakaoResult?.items || []
 
     return c.json({
       items
