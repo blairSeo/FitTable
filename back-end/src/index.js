@@ -4,6 +4,23 @@ const MODEL_NAME = '@cf/meta/llama-3.1-8b-instruct'
 
 const app = new Hono()
 
+// CORS 미들웨어
+app.use('*', async (c, next) => {
+  const origin = c.req.header('Origin') || '*'
+  
+  c.header('Access-Control-Allow-Origin', origin)
+  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  c.header('Access-Control-Allow-Credentials', 'true')
+  c.header('Access-Control-Max-Age', '600')
+  
+  if (c.req.method === 'OPTIONS') {
+    return c.text('', 204)
+  }
+  
+  await next()
+})
+
 const buildPrompt = (query) => [
   {
     role: 'system',
@@ -92,6 +109,61 @@ const buildNaverQuery = ({ keywords }) => {
   return full
 }
 
+// 네이버 좌표계를 위도/경도로 변환하는 함수
+const convertNaverCoordToLatLng = (mapx, mapy) => {
+  const x = parseFloat(mapx)
+  const y = parseFloat(mapy)
+
+  if (isNaN(x) || isNaN(y)) {
+    return null
+  }
+
+  // 네이버 좌표계를 WGS84(위도/경도)로 변환
+  const RE = 6371.00877 // 지구 반경(km)
+  const GRID = 5.0 // 격자 간격(km)
+  const SLAT1 = 30.0 // 투영 위도1(degree)
+  const SLAT2 = 60.0 // 투영 위도2(degree)
+  const OLON = 126.0 // 기준점 경도(degree)
+  const OLAT = 38.0 // 기준점 위도(degree)
+  const XO = 43 // 기준점 X좌표(GRID)
+  const YO = 136 // 기준점 Y좌표(GRID)
+
+  const DEGRAD = Math.PI / 180.0
+  const RADDEG = 180.0 / Math.PI
+
+  const re = RE / GRID
+  const slat1 = SLAT1 * DEGRAD
+  const slat2 = SLAT2 * DEGRAD
+  const olon = OLON * DEGRAD
+  const olat = OLAT * DEGRAD
+
+  let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5)
+  sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn)
+  let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5)
+  sf = (Math.pow(sf, sn) * Math.cos(slat1)) / sn
+  let ro = Math.tan(Math.PI * 0.25 + olat * 0.5)
+  ro = (re * sf) / Math.pow(ro, sn)
+
+  let ra = Math.tan(Math.PI * 0.25 + olat * 0.5)
+  ra = (re * sf) / Math.pow(ra, sn)
+  let theta = x - XO
+  theta *= olon
+  theta = theta / ra
+
+  let lat = y - YO
+  lat = lat / ra
+  lat = 2.0 * Math.atan(Math.pow(ro / ra, 1.0 / sn)) - Math.PI * 0.5
+  let lon = theta / Math.cos(lat) + olon
+
+  lat = lat * RADDEG
+  lon = lon * RADDEG
+
+  return {
+    lat: Number(lat.toFixed(6)),
+    lng: Number(lon.toFixed(6))
+  }
+}
+
 const searchNaverLocal = async (env, { location, keywords }) => {
   if (!env.NAVER_CLIENT_ID || !env.NAVER_CLIENT_SECRET) {
     throw new Error('NAVER_CLIENT_ID 또는 NAVER_CLIENT_SECRET이 설정되지 않았습니다.')
@@ -126,16 +198,24 @@ const searchNaverLocal = async (env, { location, keywords }) => {
   const data = await response.json()
 
   const simplifiedItems = Array.isArray(data.items)
-    ? data.items.map((item) => ({
-        title: item.title,
-        link: item.link,
-        category: item.category,
-        description: item.description,
-        telephone: item.telephone,
-        address: item.roadAddress || item.address,
-        mapx: item.mapx,
-        mapy: item.mapy
-      }))
+    ? data.items
+        .map((item) => {
+          // 네이버 좌표계를 위도/경도로 변환
+          const coords = convertNaverCoordToLatLng(item.mapx, item.mapy)
+
+          if (!coords) {
+            return null // 좌표 변환 실패 시 제외
+          }
+
+          // mockData.js 구조에 맞게 변환: name, lat, lng, address만 포함
+          return {
+            name: item.title || '',
+            lat: coords.lat,
+            lng: coords.lng,
+            address: item.roadAddress || item.address || ''
+          }
+        })
+        .filter((item) => item !== null) // null 제거
     : []
 
   return {

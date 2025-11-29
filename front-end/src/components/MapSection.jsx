@@ -22,22 +22,6 @@ const MapSection = ({ restaurants, selectedRestaurant, onMarkerClick, center, se
             key={`${restaurant.name}-${index}`}
             position={{ lat: restaurant.lat, lng: restaurant.lng }}
             onClick={() => onMarkerClick(restaurant)}
-            image={{
-              src:
-                selectedRestaurant?.name === restaurant.name && selectedRestaurant?.lat === restaurant.lat && selectedRestaurant?.lng === restaurant.lng
-                  ? "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png"
-                  : "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker.png",
-              size: {
-                width: 30,
-                height: 42
-              },
-              options: {
-                offset: {
-                  x: 15,
-                  y: 42
-                }
-              }
-            }}
           />
         ))}
       </Map>
