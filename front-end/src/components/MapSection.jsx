@@ -17,14 +17,14 @@ const MapSection = ({ restaurants, selectedRestaurant, onMarkerClick, center, se
   return (
     <div className="w-full h-full relative bg-gray-200">
       <Map center={{ lat: center.lat, lng: center.lng }} style={{ width: "100%", height: "100%" }} level={3} onCreate={setMap} scrollwheel={true} draggable={true} zoomable={true}>
-        {restaurants.map((restaurant) => (
+        {restaurants.map((restaurant, index) => (
           <MapMarker
-            key={restaurant.id}
+            key={`${restaurant.name}-${index}`}
             position={{ lat: restaurant.lat, lng: restaurant.lng }}
             onClick={() => onMarkerClick(restaurant)}
             image={{
               src:
-                selectedRestaurant?.id === restaurant.id
+                selectedRestaurant?.name === restaurant.name && selectedRestaurant?.lat === restaurant.lat && selectedRestaurant?.lng === restaurant.lng
                   ? "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png"
                   : "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker.png",
               size: {

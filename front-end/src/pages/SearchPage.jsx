@@ -9,14 +9,7 @@ const deriveCenterFromQuery = (query) => {
 
   const normalizedQuery = query.toLowerCase();
   const matched = mockRestaurants.filter((restaurant) => {
-    const searchableFields = [
-      restaurant.name,
-      restaurant.address,
-      restaurant.aiComment,
-      ...(restaurant.tags || [])
-    ]
-      .filter(Boolean)
-      .map((field) => field.toLowerCase());
+    const searchableFields = [restaurant.name, restaurant.address].filter(Boolean).map((field) => field.toLowerCase());
 
     return searchableFields.some((field) => field.includes(normalizedQuery));
   });

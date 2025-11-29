@@ -40,7 +40,7 @@ const ResultsPage = () => {
     // 검색어 필터링
     if (query) {
       const queryLower = query.toLowerCase();
-      filtered = filtered.filter((r) => r.name.toLowerCase().includes(queryLower) || r.tags.some((tag) => tag.toLowerCase().includes(queryLower)) || r.aiComment.toLowerCase().includes(queryLower));
+      filtered = filtered.filter((r) => r.name.toLowerCase().includes(queryLower) || r.address.toLowerCase().includes(queryLower));
     }
 
     setRestaurants(filtered);
@@ -86,67 +86,31 @@ const ResultsPage = () => {
           <div className="p-4">
             {restaurants.length > 0 ? (
               <div className="space-y-4">
-                {restaurants.map((restaurant) => (
+                {restaurants.map((restaurant, index) => (
                   <div
-                    key={restaurant.id}
+                    key={`${restaurant.name}-${index}`}
                     onClick={() => handleCardClick(restaurant)}
                     className={`bg-white rounded-2xl shadow-sm hover:shadow-xl overflow-hidden cursor-pointer transition-all duration-300 border-2 transform hover:-translate-y-1 ${
-                      selectedRestaurant?.id === restaurant.id ? "border-blue-500 shadow-blue-100 shadow-lg ring-2 ring-blue-200" : "border-gray-100 hover:border-gray-200"
+                      selectedRestaurant?.name === restaurant.name && selectedRestaurant?.lat === restaurant.lat && selectedRestaurant?.lng === restaurant.lng
+                        ? "border-blue-500 shadow-blue-100 shadow-lg ring-2 ring-blue-200"
+                        : "border-gray-100 hover:border-gray-200"
                     }`}
                   >
-                    {/* 이미지 */}
-                    <div className="w-full h-52 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden relative">
-                      <img
-                        src={restaurant.image}
-                        alt={restaurant.name}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                        onError={(e) => {
-                          e.target.src = "https://via.placeholder.com/400x300?text=No+Image";
-                        }}
-                      />
-                      {selectedRestaurant?.id === restaurant.id && <div className="absolute top-3 right-3 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">선택됨</div>}
-                    </div>
-
                     {/* 카드 내용 */}
                     <div className="p-5">
-                      {/* 이름 & 평점 */}
+                      {/* 이름 */}
                       <div className="flex items-start justify-between mb-3">
                         <h3 className="text-xl font-bold text-gray-900 flex-1 pr-2">{restaurant.name}</h3>
-                        <div className="flex items-center gap-1 bg-yellow-50 px-2.5 py-1 rounded-full">
-                          <span className="text-yellow-600 text-base font-bold">{restaurant.rating}</span>
-                          <span className="text-yellow-500 text-lg">⭐</span>
-                        </div>
+                        {selectedRestaurant?.name === restaurant.name && selectedRestaurant?.lat === restaurant.lat && selectedRestaurant?.lng === restaurant.lng && (
+                          <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">선택됨</div>
+                        )}
                       </div>
 
-                      {/* 태그 */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {restaurant.tags.map((tag, index) => (
-                          <span key={index} className="text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-full transition-colors border border-blue-100">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* AI 추천 코멘트 */}
-                      <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border-l-4 border-yellow-400 p-4 rounded-xl mb-4 shadow-sm">
+                      {/* 주소 */}
+                      <div className="pt-3 border-t border-gray-100">
                         <div className="flex items-start gap-2">
-                          <span className="text-yellow-600 font-bold text-sm">✨</span>
-                          <p className="text-sm text-gray-800 leading-relaxed flex-1">
-                            <span className="font-bold text-yellow-800">AI 추천:</span> {restaurant.aiComment}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* 가격 정보 */}
-                      <div className="pt-4 border-t border-gray-100">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">1인당 예산</p>
-                            <p className="text-lg font-bold text-gray-900">{new Intl.NumberFormat("ko-KR").format(restaurant.pricePerPerson)}원</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-gray-400 truncate max-w-[120px]">{restaurant.address}</p>
-                          </div>
+                          <span className="text-gray-400 text-sm">📍</span>
+                          <p className="text-sm text-gray-600 leading-relaxed flex-1">{restaurant.address}</p>
                         </div>
                       </div>
                     </div>
