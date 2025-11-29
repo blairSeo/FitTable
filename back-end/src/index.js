@@ -132,8 +132,7 @@ const searchNaverLocal = async (env, { location, keywords }) => {
         category: item.category,
         description: item.description,
         telephone: item.telephone,
-        address: item.address,
-        roadAddress: item.roadAddress,
+        address: item.roadAddress || item.address,
         mapx: item.mapx,
         mapy: item.mapy
       }))
@@ -205,9 +204,10 @@ app.post('/api/parse-query', async (c) => {
       console.error('[naver-search:error]', naverError)
     }
 
+    const items = naverResult?.items || []
+
     return c.json({
-      ...finalResult,
-      naver: naverResult
+      items
     })
   } catch (error) {
     console.error('[parse-query:error]', error)
