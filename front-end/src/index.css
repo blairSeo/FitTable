@@ -2,14 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 기본 라이트 모드 스타일 */
+html {
+  background-color: #ffffff !important;
+}
+
+html.dark {
+  background-color: #111827 !important;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body.dark {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+  background-color: inherit;
 }

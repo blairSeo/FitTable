@@ -66,15 +66,15 @@ const HeroSection = ({ onSearch }) => {
       {/* Logo */}
       <div className="mb-8 md:mb-12">
         <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">FitTable</h1>
-        <p className="text-center text-gray-500 mt-2 text-sm md:text-base">AI 기반 맛집 추천 서비스</p>
+        <p className="text-center text-gray-500 dark:text-gray-400 mt-2 text-sm md:text-base">AI 기반 맛집 추천 서비스</p>
       </div>
 
       {/* 구글 스타일 검색창 */}
       <div className="w-full max-w-2xl mb-8">
         <div className={`relative w-full transition-all duration-200 rounded-3xl ${isFocused ? "shadow-xl scale-[1.02]" : "shadow-lg hover:shadow-xl"}`}>
           <div
-            className={`flex items-center w-full px-5 py-4 bg-white rounded-3xl border-2 transition-all duration-200 ${
-              isFocused ? "border-blue-500 shadow-blue-100" : "border-gray-200 hover:border-gray-300"
+            className={`flex items-center w-full px-5 py-4 bg-white dark:bg-gray-800 rounded-3xl border-2 transition-all duration-200 ${
+              isFocused ? "border-blue-500 shadow-blue-100 dark:shadow-blue-900/20" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
             }`}
           >
             {/* 검색 아이콘 */}
@@ -90,12 +90,12 @@ const HeroSection = ({ onSearch }) => {
               onKeyPress={handleKeyPress}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              className="flex-1 text-base md:text-lg bg-transparent outline-none text-gray-900 placeholder-gray-400"
+              className="flex-1 text-base md:text-lg bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
             />
 
             {/* 클리어 버튼 */}
             {searchQuery && (
-              <button onClick={handleClear} className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0">
+              <button onClick={handleClear} className="ml-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             )}
