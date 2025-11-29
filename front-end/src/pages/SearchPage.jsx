@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import HeroSection from "../components/HeroSection"
 import SettingsModal from "../components/SettingsModal"
+import VideoModal from "../components/VideoModal"
 import { Settings } from "lucide-react"
 
 /**
@@ -10,6 +11,9 @@ import { Settings } from "lucide-react"
 const SearchPage = () => {
   const navigate = useNavigate()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isVideoOpen, setIsVideoOpen] = useState(false)
+  
+  const VIDEO_URL = "https://sangmin.v4.wecandeo.com/play/video/v?key=89dFFlYX1EtfgPzG6Hu3R94Z3w8bxh2OUBmMLo4gLqUie&urlKey=default"
 
   /**
    * 검색 실행 핸들러
@@ -30,7 +34,10 @@ const SearchPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative">
-      <HeroSection onSearch={handleSearch} />
+      <HeroSection 
+        onSearch={handleSearch} 
+        onLogoClick={() => setIsVideoOpen(true)}
+      />
       
       {/* 설정 버튼 */}
       <button
@@ -45,6 +52,13 @@ const SearchPage = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* 비디오 모달 */}
+      <VideoModal
+        isOpen={isVideoOpen}
+        onClose={() => setIsVideoOpen(false)}
+        videoUrl={VIDEO_URL}
       />
     </div>
   )
