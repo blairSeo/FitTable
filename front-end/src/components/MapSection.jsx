@@ -37,11 +37,11 @@ const MapSection = ({
 
           return (
             <MapMarker
-              key={`${restaurant.name}-${restaurant.lat}-${restaurant.lng}-${index}`}
+              key={`${restaurant.name}-${restaurant.lat}-${restaurant.lng}-${index}-${isSelected ? 'selected' : 'default'}`}
               position={{ lat: restaurant.lat, lng: restaurant.lng }}
               clickable={true}
               onClick={() => onMarkerClick && onMarkerClick(restaurant)}
-              {...(isSelected && {
+              {...(isSelected ? {
                 image: {
                   src: "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png",
                   size: { width: 29, height: 42 },
@@ -49,7 +49,7 @@ const MapSection = ({
                     offset: { x: 14, y: 42 }
                   }
                 }
-              })}
+              } : {})}
             />
           )
         })}

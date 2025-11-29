@@ -306,7 +306,7 @@ const validateAiResult = (result) => {
   console.log('[Keyword Refinement] Raw keywords:', rawKeywords)
   console.log('[Keyword Refinement] Refined keywords:', keywords)
 
-  return { location, keywords }
+  return { location, keywords, rawKeywords }
 }
 
 /**
@@ -430,12 +430,35 @@ const transformKakaoResponse = (documents) => {
 /**
  * 카카오 로컬 API 검색
  */
-const searchKakaoLocal = async (env, { location, keywords, page = 1 }) => {
+const searchKakaoLocal = async (env, { location, keywords, rawKeywords, page = 1 }) => {
   if (!env.KAKAO_REST_API_KEY) {
     throw new Error('KAKAO_REST_API_KEY가 설정되지 않았습니다.')
   }
 
-  const query = buildKakaoQuery(keywords)
+  // rawKeywords와 keywords를 합쳐서 검색 쿼리 생성
+  const combinedKeywords = []
+  
+  // rawKeywords 추가 (중복 제거)
+  if (Array.isArray(rawKeywords)) {
+    rawKeywords.forEach(kw => {
+      const trimmed = String(kw).trim()
+      if (trimmed && !combinedKeywords.includes(trimmed)) {
+        combinedKeywords.push(trimmed)
+      }
+    })
+  }
+  
+  // keywords 추가 (중복 제거)
+  if (Array.isArray(keywords)) {
+    keywords.forEach(kw => {
+      const trimmed = String(kw).trim()
+      if (trimmed && !combinedKeywords.includes(trimmed)) {
+        combinedKeywords.push(trimmed)
+      }
+    })
+  }
+
+  const query = buildKakaoQuery(combinedKeywords)
   if (!query) {
     throw new Error('카카오 검색에 사용할 쿼리가 비어 있습니다.')
   }
@@ -467,7 +490,6 @@ const searchKakaoLocal = async (env, { location, keywords, page = 1 }) => {
   }
 
   const data = await response.json()
-  console.log('[kakao-search] 응답:', JSON.stringify(data, null, 2))
   
   // 응답 구조 검증
   if (!data || typeof data !== 'object') {
