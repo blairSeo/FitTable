@@ -27,11 +27,13 @@ const VideoModal = ({ isOpen, onClose, videoUrl }) => {
         {/* 비디오 iframe */}
         <div className="w-full h-full rounded-2xl overflow-hidden">
           <iframe
-            src={videoUrl}
+            src={`${videoUrl}&auto=true`}
             className="w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             title="FitTable 홍보 영상"
+            width={"320"}
+            height={"180"}
           />
         </div>
       </div>

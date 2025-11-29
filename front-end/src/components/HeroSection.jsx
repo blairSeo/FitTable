@@ -96,7 +96,7 @@ const HeroSection = ({ onSearch, onLogoClick }) => {
           className="group cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95"
           aria-label="홍보 영상 보기"
         >
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent group-hover:from-blue-500 group-hover:via-purple-500 group-hover:to-pink-500 transition-colors">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent group-hover:from-blue-500 group-hover:via-purple-500 group-hover:to-pink-500 transition-colors animate-bounce-gentle">
             FitTable
           </h1>
         </button>
