@@ -1,6 +1,27 @@
-import { Map, MapMarker } from "react-kakao-maps-sdk";
+import { Map, MapMarker } from "react-kakao-maps-sdk"
 
-const MapSection = ({ center, restaurants = [], selectedRestaurant = null, onMarkerClick }) => {
+/**
+ * 지도 섹션 컴포넌트
+ */
+const MapSection = ({ 
+  center, 
+  restaurants = [], 
+  selectedRestaurant = null, 
+  onMarkerClick 
+}) => {
+  /**
+   * 레스토랑이 선택되었는지 확인
+   */
+  const isRestaurantSelected = (restaurant) => {
+    if (!selectedRestaurant) return false
+    
+    return (
+      selectedRestaurant.name === restaurant.name &&
+      selectedRestaurant.lat === restaurant.lat &&
+      selectedRestaurant.lng === restaurant.lng
+    )
+  }
+
   return (
     <div className="w-full h-full relative bg-gray-200">
       <Map 
@@ -12,14 +33,11 @@ const MapSection = ({ center, restaurants = [], selectedRestaurant = null, onMar
         zoomable={true}
       >
         {restaurants.map((restaurant, index) => {
-          const isSelected = selectedRestaurant && 
-            selectedRestaurant.name === restaurant.name &&
-            selectedRestaurant.lat === restaurant.lat &&
-            selectedRestaurant.lng === restaurant.lng;
+          const isSelected = isRestaurantSelected(restaurant)
 
           return (
             <MapMarker
-              key={`${restaurant.name}-${restaurant.lat}-${restaurant.lng}-${index}-${isSelected ? 'selected' : 'default'}`}
+              key={`${restaurant.name}-${restaurant.lat}-${restaurant.lng}-${index}`}
               position={{ lat: restaurant.lat, lng: restaurant.lng }}
               clickable={true}
               onClick={() => onMarkerClick && onMarkerClick(restaurant)}
@@ -33,11 +51,11 @@ const MapSection = ({ center, restaurants = [], selectedRestaurant = null, onMar
                 }
               })}
             />
-          );
+          )
         })}
       </Map>
     </div>
-  );
-};
+  )
+}
 
-export default MapSection;
+export default MapSection

@@ -1,34 +1,38 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import HeroSection from "../components/HeroSection";
-import SettingsModal from "../components/SettingsModal";
-import { Settings } from "lucide-react";
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import HeroSection from "../components/HeroSection"
+import SettingsModal from "../components/SettingsModal"
+import { Settings } from "lucide-react"
 
+/**
+ * 검색 페이지 컴포넌트
+ */
 const SearchPage = () => {
-  const navigate = useNavigate();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const navigate = useNavigate()
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
+  /**
+   * 검색 실행 핸들러
+   */
   const handleSearch = (searchParams) => {
     const params = new URLSearchParams({
       query: searchParams.query || ""
-    });
+    })
 
     // 현재 위치가 있으면 URL 파라미터에 추가
     if (searchParams.currentLat && searchParams.currentLng) {
-      params.append("currentLat", searchParams.currentLat.toString());
-      params.append("currentLng", searchParams.currentLng.toString());
+      params.append("currentLat", searchParams.currentLat.toString())
+      params.append("currentLng", searchParams.currentLng.toString())
     }
 
-    navigate(`/results?${params.toString()}`);
-  };
+    navigate(`/results?${params.toString()}`)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative">
-      <HeroSection
-        onSearch={handleSearch}
-      />
+      <HeroSection onSearch={handleSearch} />
       
-      {/* 설정 버튼 (우측 하단) */}
+      {/* 설정 버튼 */}
       <button
         onClick={() => setIsSettingsOpen(true)}
         className="fixed bottom-6 right-6 p-4 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110 border-2 border-gray-200 dark:border-gray-700 z-50"
@@ -43,7 +47,7 @@ const SearchPage = () => {
         onClose={() => setIsSettingsOpen(false)}
       />
     </div>
-  );
-};
+  )
+}
 
-export default SearchPage;
+export default SearchPage
