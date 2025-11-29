@@ -419,7 +419,9 @@ const transformKakaoResponse = (documents) => {
         name: item.place_name || '',
         lat: Number(lat.toFixed(6)),
         lng: Number(lng.toFixed(6)),
-        address: item.road_address_name || item.address_name || ''
+        address: item.road_address_name || item.address_name || '',
+        phone: item.phone || '',
+        category_name: item.category_name || ''
       }
     })
     .filter((item) => item !== null)
@@ -465,6 +467,7 @@ const searchKakaoLocal = async (env, { location, keywords, page = 1 }) => {
   }
 
   const data = await response.json()
+  console.log('[kakao-search] 응답:', JSON.stringify(data, null, 2))
   
   // 응답 구조 검증
   if (!data || typeof data !== 'object') {

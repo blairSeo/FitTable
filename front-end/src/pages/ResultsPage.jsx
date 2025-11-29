@@ -170,15 +170,15 @@ const ResultsPage = () => {
       <div
         key={`${restaurant.name}-${index}`}
         onClick={() => handleRestaurantSelect(restaurant)}
-        className={`bg-white rounded-2xl shadow-sm hover:shadow-xl overflow-hidden cursor-pointer transition-all duration-300 border-2 transform hover:-translate-y-1 ${
+        className={`bg-white dark:bg-gray-700 rounded-2xl shadow-sm hover:shadow-xl overflow-hidden cursor-pointer transition-all duration-300 border-2 transform hover:-translate-y-1 ${
           isSelected
-            ? "border-blue-500 shadow-blue-100 shadow-lg ring-2 ring-blue-200"
-            : "border-gray-100 hover:border-gray-200"
+            ? "border-blue-500 shadow-blue-100 dark:shadow-blue-900/20 shadow-lg ring-2 ring-blue-200 dark:ring-blue-800"
+            : "border-gray-100 dark:border-gray-600 hover:border-gray-200 dark:hover:border-gray-500"
         }`}
       >
         <div className="p-5">
           <div className="flex items-start justify-between mb-3">
-            <h3 className="text-xl font-bold text-gray-900 flex-1 pr-2">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white flex-1 pr-2">
               {restaurant.name}
             </h3>
             {isSelected && (
@@ -188,13 +188,37 @@ const ResultsPage = () => {
             )}
           </div>
 
-          <div className="pt-3 border-t border-gray-100">
+          {/* 카테고리 */}
+          {restaurant.category_name && (
+            <div className="mb-3">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
+                {restaurant.category_name}
+              </span>
+            </div>
+          )}
+
+          <div className="space-y-2 pt-3 border-t border-gray-100 dark:border-gray-600">
+            {/* 주소 */}
             <div className="flex items-start gap-2">
-              <span className="text-gray-400 text-sm">📍</span>
-              <p className="text-sm text-gray-600 leading-relaxed flex-1">
+              <span className="text-gray-400 dark:text-gray-500 text-sm">📍</span>
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed flex-1">
                 {restaurant.address}
               </p>
             </div>
+
+            {/* 전화번호 */}
+            {restaurant.phone && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 dark:text-gray-500 text-sm">📞</span>
+                <a
+                  href={`tel:${restaurant.phone}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+                >
+                  {restaurant.phone}
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </div>
