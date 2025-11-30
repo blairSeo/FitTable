@@ -97,27 +97,6 @@ npm start
 
 백엔드는 기본적으로 `http://localhost:8787`에서 실행됩니다.
 
-### 환경 변수 설정
-
-#### 프론트엔드
-
-프론트엔드에서 백엔드 API URL을 지정하려면 `.env` 파일을 생성하세요:
-
-```env
-VITE_API_BASE_URL=http://localhost:8787
-```
-
-#### 백엔드
-
-백엔드는 `wrangler.toml` 파일에서 환경 변수를 관리합니다:
-
-```toml
-[vars]
-KAKAO_REST_API_KEY="your-kakao-rest-api-key"
-```
-
-카카오 로컬 API 키는 [카카오 개발자 콘솔](https://developers.kakao.com)에서 발급받을 수 있습니다.
-
 ### 전체 프로젝트 실행
 
 1. 터미널 1: 백엔드 실행
@@ -182,33 +161,6 @@ npx wrangler login
 # 배포
 npm run deploy
 ```
-
-배포 전에 `wrangler.toml` 파일에서 환경 변수를 확인하고 설정하세요.
-
-```toml
-[vars]
-KAKAO_REST_API_KEY="your-production-kakao-api-key"
-```
-
-#### 프로덕션 환경 변수 설정
-
-프로덕션 환경에서는 Wrangler CLI로 환경 변수를 설정할 수 있습니다:
-
-```bash
-npx wrangler secret put KAKAO_REST_API_KEY
-```
-
-### 배포 후 프론트엔드 설정
-
-배포된 백엔드 URL을 프론트엔드 환경 변수에 설정해야 합니다.
-
-**Vercel 환경 변수 설정:**
-1. Vercel 대시보드 → 프로젝트 → Settings → Environment Variables
-2. `VITE_API_BASE_URL` 변수 추가 (예: `https://your-worker.workers.dev`)
-
-**Netlify 환경 변수 설정:**
-1. Netlify 대시보드 → Site settings → Environment variables
-2. `VITE_API_BASE_URL` 변수 추가
 
 ## 5. 사용한 기술
 
