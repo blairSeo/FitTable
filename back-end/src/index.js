@@ -438,6 +438,14 @@ const searchKakaoLocal = async (env, { location, keywords, rawKeywords, page = 1
   // rawKeywords와 keywords를 합쳐서 검색 쿼리 생성
   const combinedKeywords = []
   
+  // 지역명이 있으면 맨 앞에 추가
+  if (location?.name) {
+    const locationName = String(location.name).trim()
+    if (locationName && !combinedKeywords.includes(locationName)) {
+      combinedKeywords.push(locationName)
+    }
+  }
+  
   // rawKeywords 추가 (중복 제거)
   if (Array.isArray(rawKeywords)) {
     rawKeywords.forEach(kw => {
