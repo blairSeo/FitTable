@@ -13,7 +13,7 @@ const SearchPage = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isVideoOpen, setIsVideoOpen] = useState(false)
   
-  const VIDEO_URL = "https://sangmin.v4.wecandeo.com/play/video/v?key=89dFFlYX1EtfgPzG6Hu3R94Z3w8bxh2OUBmMLo4gLqUie&urlKey=default"
+  const VIDEO_URL = "https://sangmin.v4.wecandeo.com/play/video/v?key=89dFFlYX1EtfgPzG6Hu3R7QTJuN2InVWUBmMLo4gLqUie&urlKey=default"
 
   /**
    * 검색 실행 핸들러
